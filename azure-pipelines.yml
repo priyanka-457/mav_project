@@ -1,19 +1,31 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- main
+  - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: MyLocalPool  # Ensure exact match with the pool name in Azure DevOps
+  demands: []        # Add demands to help Azure DevOps recognize the pool
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+  # Step 1: Checkout the Code from GitHub
+  - checkout: self
+    displayName: 'Checkout Code from GitHub'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  # Step 2: Build and Run Unit Tests
+  - script: mvn clean test
+    displayName: 'Build and Run Unit Tests'
+
+  # Step 3: Publish Test Results (JUnit)
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+      failTaskOnMissingResultsFile: true
+    displayName: 'Publish Maven Test Results'
+
+  # Step 4: Publish Build Artifacts
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: 'target'
+      artifactName: 'drop'
+      publishLocation: 'Container'
+    displayName: 'Publish Build Artifacts'
